@@ -134,11 +134,15 @@ client.on("ready", () => {
 });
 
 function handle_start_dp_raid(message) {
-  if (message.member.roles.has(novaCaptainRole.id)) {
-    initDpRaidArray(message.channel);
-    sendDpRaidArray(message.channel);
+  if (message.channel.name.includes("deadpool"))
+    if (message.member.roles.has(novaCaptainRole.id)) {
+      initDpRaidArray(message.channel);
+      sendDpRaidArray(message.channel);
+    } else {
+      message.channel.send(message.author+" You don't have permission to start a raid!");
+    }
   } else {
-    message.channel.send(message.author+" You don't have permission to start a raid!");
+    message.channel.send(message.author+" Yo, I only start deadpool raids in deadpool rooms!")
   }
   message.delete();
 }
@@ -199,7 +203,9 @@ function handle_modify_dp_lane_override(message) {
 }
 
 client.on("message", (message) => {
-  console.log("Message received from "+message.author+" "+message.content);
+  if (message.content.startsWith(".")) {
+    console.log("Message received from "+message.author.username+" "+message.content);
+  }
   if (message.content.startsWith(".start_dp_raid")) {
     handle_start_dp_raid(message);
   }
