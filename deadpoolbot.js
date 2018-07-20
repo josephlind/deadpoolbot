@@ -223,4 +223,18 @@ client.on("message", (message) => {
   }
 });
 
-client.login("NDY5ODgzNjIxMzEwNzI2MTc0.DjORxg.85Sq-QYTA10d2B76jJB9D58nxPE");
+var fs = require('fs'),
+    path = require('path'),
+    filePath = path.join('/etc/deadpoolbot', 'secret.txt');
+var secret = "";
+
+fs.readFile(filePath, {encoding: 'utf-8'}, function(err,data){
+    if (!err) {
+        console.log('received data: ' + data);
+        secret = data;
+    } else {
+        console.log(err);
+    }
+});
+
+client.login(secret);
