@@ -13,7 +13,7 @@ function template(strings, ...keys) {
   });
 }
 
-var dpTemplate = template`ST1:\n1)${0}\n2)${1}\n3)${2}\n4)${3}\n5)${4}\n6)${5}\n7)${6}\n8)${7}\n\nST2:\n1)${8}\n2)${9}\n3)${10}\n4)${11}\n5)${12}\n6)${13}\n7)${14}\n8)${15}\n\nST3:\n1)${16}\n2)${17}\n3)${18}\n4)${19}\n5)${20}\n6)${21}\n7)${22}\n8)${23}`
+var dpTemplate = template`ST1:\n1) ${0}\n2) ${1}\n3) ${2}\n4) ${3}\n5) ${4}\n6) ${5}\n7) ${6}\n8) ${7}\n\nST2:\n1) ${8}\n2) ${9}\n3) ${10}\n4) ${11}\n5) ${12}\n6) ${13}\n7) ${14}\n8) ${15}\n\nST3:\n1) ${16}\n2) ${17}\n3) ${18}\n4) ${19}\n5) ${20}\n6) ${21}\n7) ${22}\n8) ${23}`
 
 var primeDpRaidArr = null;
 var primeDpRaidMsg = null;
@@ -63,7 +63,7 @@ function getDpRaidArr(channel) {
 }
 
 function sendDpRaidArray(channel) {
-  dpRaidArr = getDpRaidArr(channel);
+  var dpRaidArr = getDpRaidArr(channel);
   var msg = dpTemplate.apply(null, dpRaidArr);
   channel.send(msg)
       .then(function(result) {
@@ -73,7 +73,7 @@ function sendDpRaidArray(channel) {
 }
 
 function editDpRaidMsg(channel) {
-  dpRaidArr = getDpRaidArr(channel);
+  var dpRaidArr = getDpRaidArr(channel);
   var msg = dpTemplate.apply(null, dpRaidArr);
   getDpRaidMsg(channel).edit(msg);
 }
@@ -129,22 +129,32 @@ function populateRoles() {
 }
 
 client.on("ready", () => {
-  console.log("I am ready!");
   populateRoles();
+  console.log("Init complete!");
 });
 
+function handle_start_dp_raid(message) {
+  if (message.member.roles.has(novaCaptainRole.id)) {
+    initDpRaidArray(message.channel);
+    sendDpRaidArray(message.channel);
+  } else {
+    message.channel.send(message.author+" You don't have permission to start a raid!");
+  }
+  message.delete();
+}
 
-client.on("message", (message) => {
-  if (message.content.startsWith(".start_dp_raid")) {
+function handle_end_dp_raid(message) {
+  if (getDpRaidMsg(message.channel) != null) {
     if (message.member.roles.has(novaCaptainRole.id)) {
-      initDpRaidArray(message.channel);
-      sendDpRaidArray(message.channel);
-    } else {
-      message.channel.send(message.author+" You don't have permission to start a raid!");
+      console.log("Trying to end the raid...");
+      getDpRaidMsg(message.channel).delete();
     }
     message.delete();
   }
-  else if (message.content.startsWith(".claim") && getDpRaidMsg(message.channel) != null) {
+}
+
+function handle_modify_dp_lane(message, add) {
+  if (getDpRaidMsg(message.channel) != null) {
     var slot = parseInt(message.content.split(' ')[1], 10);
     var slotOffset = getSlotOffset(message);
     if (slot < 1 || slot > 8) {
@@ -152,25 +162,12 @@ client.on("message", (message) => {
     } else if (slotOffset == 0) {
       console.error("Invalid offset, message already sent to user");
     } else {
-      dpRaidArr = getDpRaidArr(message.channel);
-      if (dpRaidArr[slot+slotOffset] == null) {
+      var dpRaidArr = getDpRaidArr(message.channel);
+      if (add && dpRaidArr[slot+slotOffset] == null && dpRaidArr.indexOf(message.author)) {
         console.log("Editing slot " + slot);
         dpRaidArr[slot+slotOffset] = message.author;
         editDpRaidMsg(message.channel);
-      }
-      message.delete();
-    }
-  }
-  else if (message.content.startsWith(".release") && getDpRaidMsg(message.channel) != null) {
-    var slot = parseInt(message.content.split(' ')[1], 10);
-    var slotOffset = getSlotOffset(message);
-    if (slot < 1 || slot > 8) {
-      message.channel.send(message.author+" Hey, dummy, you picked an invalid lane number!");
-    } else if (slotOffset == 0) {
-      console.error("Invalid offset, message already sent to user");
-    } else {
-      dpRaidArr = getDpRaidArr(message.channel);
-      if (dpRaidArr[slot+slotOffset] === message.author) {
+      } else if (!add && dpRaidArr[slot+slotOffset] === message.author) {
         console.log("Releasing slot " + slot);
         dpRaidArr[slot+slotOffset] = null;
         editDpRaidMsg(message.channel);
@@ -178,7 +175,10 @@ client.on("message", (message) => {
       message.delete();
     }
   }
-  else if (message.content.startsWith(".override") && getDpRaidMsg(message.channel) != null) {
+}
+
+function handle_modify_dp_lane_override(message) {
+  if (getDpRaidMsg(message.channel) != null) {
     if (message.member.roles.has(novaCaptainRole.id)) {
       var args = message.content.split(' ');
       var slot = parseInt(args[2], 10) + 8 * (parseInt(args[1], 10) - 1) - 1;
@@ -187,7 +187,7 @@ client.on("message", (message) => {
         message.channel.send(message.author+" Did you have a correct st/lane combination? (command: .override [strike team] [lane] [member])")
       } else {
         console.log("Editing slot " + slot);
-        dpRaidArr = getDpRaidArr(message.channel);
+        var dpRaidArr = getDpRaidArr(message.channel);
         dpRaidArr[slot] = args[3];
         editDpRaidMsg(message.channel);
         message.delete();
@@ -196,12 +196,24 @@ client.on("message", (message) => {
       message.channel.send(message.author+" You don't have permission to override an assignment!");
     }
   }
-  else if (message.content.startsWith(".end_raid") && getDpRaidMsg(message.channel) != null) {
-    if (message.member.roles.has(novaCaptainRole.id)) {
-      console.log("Trying to end the raid...");
-      getDpRaidMsg(message.channel).delete();
-    }
-    message.delete();
+}
+
+client.on("message", (message) => {
+  console.log("Message received from "+message.author+" "+message.content);
+  if (message.content.startsWith(".start_dp_raid")) {
+    handle_start_dp_raid(message);
+  }
+  else if (message.content.startsWith(".claim")) {
+    handle_modify_dp_lane(message, true);
+  }
+  else if (message.content.startsWith(".release")) {
+    handle_modify_dp_lane(message, false);
+  }
+  else if (message.content.startsWith(".override")) {
+    handle_modify_dp_lane_override(message);
+  }
+  else if (message.content.startsWith(".end_raid")) {
+    handle_end_dp_raid(message);
   }
 });
 
