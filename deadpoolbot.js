@@ -134,7 +134,7 @@ client.on("ready", () => {
 });
 
 function handle_start_dp_raid(message) {
-  if (message.channel.name.includes("deadpool"))
+  if (message.channel.name.includes("deadpool")) {
     if (message.member.roles.has(novaCaptainRole.id)) {
       initDpRaidArray(message.channel);
       sendDpRaidArray(message.channel);
