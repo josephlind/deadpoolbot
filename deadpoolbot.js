@@ -163,7 +163,7 @@ function handle_modify_dp_lane(message, add) {
       console.error("Invalid offset, message already sent to user");
     } else {
       var dpRaidArr = getDpRaidArr(message.channel);
-      if (add && dpRaidArr[slot+slotOffset] == null && dpRaidArr.indexOf(message.author)) {
+      if (add && dpRaidArr[slot+slotOffset] == null && dpRaidArr.indexOf(message.author) == -1) {
         console.log("Editing slot " + slot);
         dpRaidArr[slot+slotOffset] = message.author;
         editDpRaidMsg(message.channel);
